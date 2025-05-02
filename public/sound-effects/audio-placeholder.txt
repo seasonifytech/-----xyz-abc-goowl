@@ -1,0 +1,7 @@
+This is a placeholder file for the sound-effects directory. The actual audio files should be placed in this directory:
+
+- Voicy_Bad answer.mp3
+- Voicy_Click.mp3
+- Voicy_Correct answer sound effect.mp3
+- Voicy_Lesson complete.mp3
+- Voicy_Level complete.mp3
