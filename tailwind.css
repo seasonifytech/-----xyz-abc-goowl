@@ -175,6 +175,44 @@ button:active {
   height: 8px;
 }
 
+/* Mobile-first responsive design */
+/* Base mobile styles */
+.w-[1440px] {
+  width: 100%;
+}
+
+/* Responsive typography */
+@layer utilities {
+  .text-responsive {
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+  }
+}
+
+/* Responsive spacing */
+.responsive-gap {
+  gap: clamp(0.5rem, 2vw, 1rem);
+}
+
+.responsive-padding {
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+/* PWA display improvements */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  
+  /* Add safe area insets for notched devices */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -192,4 +230,23 @@ button:active {
 * {
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
+}
+
+/* Touch interactions */
+@media (hover: none) {
+  .hover\:bg-gray-100:hover {
+    background-color: transparent;
+  }
+  
+  .active\:translate-y-1:active {
+    transform: translateY(2px);
+  }
+}
+
+/* Safe area insets */
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }

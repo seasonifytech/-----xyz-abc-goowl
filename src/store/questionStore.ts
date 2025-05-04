@@ -58,6 +58,7 @@ export const useQuestionStore = create<QuestionState>()(
           set({ loadingQuestions: true, error: null });
           const filters = get().filters;
           const seenQuestions = get().seenQuestions;
+          const currentQuestion = get().currentQuestion;
           
           console.log(`Excluding ${seenQuestions.length} previously seen questions`);
           
@@ -99,8 +100,10 @@ export const useQuestionStore = create<QuestionState>()(
           set({ 
             questionList: questions, 
             loadingQuestions: false,
-            // If we don't have a current question yet, set it to the first one
-            currentQuestion: get().currentQuestion || (questions.length > 0 ? questions[0] : null)
+            // Only update current question if we don't have one or if it's not in the new list
+            currentQuestion: currentQuestion && questions.find(q => q.id === currentQuestion.id)
+              ? currentQuestion 
+              : questions.length > 0 ? questions[0] : null
           });
         } catch (error) {
           console.error('Error in fetchQuestions:', error);

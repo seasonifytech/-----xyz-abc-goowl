@@ -1,6 +1,11 @@
 import { supabase } from '../lib/supabase';
 import type { Database } from '../types/supabase';
 
+export type CommunityAnswer = Database['public']['Tables']['community_answers']['Row'];
+
+// Constants
+const FETCH_MULTIPLIER = 3; // Fetch more questions for better randomization
+
 export type Question = Database['public']['Tables']['interview_questions']['Row'];
 
 // Mock data in case the API fails or returns empty
@@ -43,43 +48,52 @@ const MOCK_QUESTIONS: Question[] = [
   }
 ];
 
+// Helper function to shuffle array
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+async function fetchAndFilterQuestions(
+  query: any,
+  limit: number,
+  excludeIds: string[] = []
+): Promise<Question[]> {
+  // Fetch more questions than needed for better randomization
+  const fetchLimit = limit * FETCH_MULTIPLIER;
+  
+  // Exclude already seen questions
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+  }
+  
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(fetchLimit);
+  
+  if (error || !data || data.length === 0) {
+    return MOCK_QUESTIONS;
+  }
+  
+  // Shuffle and trim to requested limit
+  return shuffleArray(data).slice(0, limit);
+}
+
 export async function getRandomQuestions(limit = 10, excludeIds: string[] = []): Promise<Question[]> {
   try {
     console.log(`Fetching random questions (excluding ${excludeIds.length} seen questions)...`);
-    
-    // Check if we have an active session
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('Session state:', session ? 'Active' : 'No session');
-    
+
     let query = supabase
       .from('interview_questions')
       .select('*');
-    
-    // Exclude already seen questions if there are any
-    if (excludeIds.length > 0) {
-      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-    }
-    
-    // Add randomization and limit
-    query = query.order('created_at', { ascending: false })
-      .limit(limit);
 
-    const { data, error } = await query;
-
-    console.log('Random questions query result:', { data: data?.length || 0, error });
-
-    if (error) {
-      console.error('Error fetching questions:', error);
-      return MOCK_QUESTIONS;
-    }
-
-    if (!data || data.length === 0) {
-      console.warn('No questions found, returning mock data');
-      return MOCK_QUESTIONS;
-    }
-
-    console.log(`Successfully fetched ${data.length} questions`);
-    return data;
+    const questions = await fetchAndFilterQuestions(query, limit, excludeIds);
+    console.log(`Successfully fetched ${questions.length} random questions`);
+    return questions;
   } catch (err) {
     console.error('Unexpected error fetching questions:', err);
     return MOCK_QUESTIONS;
@@ -120,31 +134,12 @@ export async function getCompanyQuestions(
     let query = supabase
       .from('interview_questions')
       .select('*')
-      .eq('company', company);
-    
-    // Exclude already seen questions if there are any
-    if (excludeIds.length > 0) {
-      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-    }
-    
-    query = query.limit(limit);
-    
-    const { data, error } = await query;
+      .eq('company', company)
+      .order('created_at', { ascending: false });
 
-    console.log('Company questions query result:', { company, dataLength: data?.length || 0, error });
-
-    if (error) {
-      console.error(`Error fetching questions for company ${company}:`, error);
-      return MOCK_QUESTIONS;
-    }
-
-    if (!data || data.length === 0) {
-      console.warn(`No questions found for company ${company}, returning mock data`);
-      return MOCK_QUESTIONS;
-    }
-
-    console.log(`Successfully fetched ${data.length} questions for company ${company}`);
-    return data;
+    const questions = await fetchAndFilterQuestions(query, limit, excludeIds);
+    console.log(`Successfully fetched ${questions.length} questions for company ${company}`);
+    return questions;
   } catch (err) {
     console.error(`Unexpected error fetching company questions for ${company}:`, err);
     return MOCK_QUESTIONS;
@@ -181,23 +176,11 @@ export async function getFilteredQuestions(
     if (filters.company) {
       query = query.eq('company', filters.company);
     }
+
+    const questions = await fetchAndFilterQuestions(query, limit, excludeIds);
     
-    // Exclude already seen questions if there are any
-    if (excludeIds.length > 0) {
-      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-    }
-
-    query = query.limit(limit);
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching filtered questions:', error);
-      return MOCK_QUESTIONS;
-    }
-
-    // If no results with strict filters, try with just one filter
-    if (!data || data.length === 0) {
+    // If no results with strict filters, try with looser criteria
+    if (questions.length === 0) {
       console.log('No questions found with strict filters, trying looser criteria...');
       
       // Try with just company if specified
@@ -213,24 +196,11 @@ export async function getFilteredQuestions(
         let categoryQuery = supabase
           .from('interview_questions')
           .select('*')
-          .eq('category', filters.category);
-        
-        // Exclude already seen questions if there are any
-        if (excludeIds.length > 0) {
-          categoryQuery = categoryQuery.not('id', 'in', `(${excludeIds.join(',')})`);
-        }
-        
-        categoryQuery = categoryQuery.limit(limit);
-        
-        const { data: categoryData, error: categoryError } = await categoryQuery;
+          .eq('category', filters.category)
+          .order('created_at', { ascending: false });
 
-        if (!categoryError && categoryData && categoryData.length > 0) {
-          console.log(`Found ${categoryData.length} questions with category filter`);
-          return categoryData;
-        }
+        return await fetchAndFilterQuestions(categoryQuery, limit, excludeIds);
       }
-      
-      console.log('No questions found with any filters, returning mock data');
       return MOCK_QUESTIONS;
     }
 
@@ -295,5 +265,71 @@ export async function getCompanies(): Promise<string[]> {
   } catch (err) {
     console.error('Unexpected error fetching companies:', err);
     return ['Google', 'Apple', 'Meta', 'Amazon', 'Microsoft', 'Netflix'];
+  }
+}
+
+export async function incrementViewCount(questionId: string): Promise<void> {
+  try {
+    console.log(`Incrementing view count for question ${questionId}`);
+    await supabase.rpc('increment_views', { question_id: questionId });
+  } catch (err) {
+    console.error(`Error incrementing view count for question ${questionId}:`, err);
+  }
+}
+
+export async function getCommunityAnswers(questionId: string): Promise<CommunityAnswer[]> {
+  try {
+    console.log(`Fetching community answers for question ${questionId}`);
+    const { data, error } = await supabase
+      .from('community_answers')
+      .select('*')
+      .eq('question_id', questionId)
+      .order('upvotes', { ascending: false });
+
+    if (error) {
+      console.error(`Error fetching community answers for question ${questionId}:`, error);
+      return [];
+    }
+
+    return data;
+  } catch (err) {
+    console.error(`Error fetching community answers for question ${questionId}:`, err);
+    return [];
+  }
+}
+
+export async function submitCommunityAnswer(
+  questionId: string,
+  answer: string
+): Promise<CommunityAnswer | null> {
+  try {
+    console.log(`Submitting community answer for question ${questionId}`);
+    const { data, error } = await supabase
+      .from('community_answers')
+      .insert([{ question_id: questionId, answer }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error(`Error submitting community answer for question ${questionId}:`, error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error(`Error submitting community answer for question ${questionId}:`, err);
+    return null;
+  }
+}
+
+export async function upvoteAnswer(answerId: string): Promise<void> {
+  try {
+    console.log(`Upvoting answer ${answerId}`);
+    await supabase
+      .from('community_answers')
+      .update({ upvotes: supabase.rpc('increment') })
+      .eq('id', answerId);
+  } catch (err) {
+    console.error(`Error upvoting answer ${answerId}:`, err);
   }
 }

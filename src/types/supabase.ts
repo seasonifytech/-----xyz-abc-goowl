@@ -9,6 +9,37 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      community_answers: {
+        Row: {
+          id: string
+          question_id: string
+          answer: string
+          created_at: string
+          upvotes: number
+        }
+        Insert: {
+          id?: string
+          question_id: string
+          answer: string
+          created_at?: string
+          upvotes?: number
+        }
+        Update: {
+          id?: string
+          question_id?: string
+          answer?: string
+          created_at?: string
+          upvotes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_answers_question_id_fkey"
+            columns: ["question_id"]
+            referencedRelation: "interview_questions"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       framework_templates: {
         Row: {
           id: string
@@ -47,6 +78,8 @@ export interface Database {
           difficulty: string | null
           created_at: string | null
           created_by: string | null
+          views: number | null
+          answer_count: number | null
           job_role: string | null
           company: string | null
           answer_brief: string | null

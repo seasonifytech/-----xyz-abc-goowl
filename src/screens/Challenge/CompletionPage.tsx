@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeftIcon } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useQuestionStore } from "../../store/questionStore";
-import { generateFeedback } from "../../services/feedbackService";
+import { generateFeedback, rateFeedback } from "../../services/feedbackService";
 import { playSound } from "../../services/audioService";
 import { useAudioStore } from "../../store/audioStore";
 import { CloseButton } from "../../components/ui/close-button";
@@ -25,6 +25,8 @@ export const CompletionPage = (): JSX.Element => {
     example_improvement: string;
     interview_readiness: string;
   } | null>(null);
+  const [feedbackLogId, setFeedbackLogId] = useState<string | null>(null);
+  const [feedbackRated, setFeedbackRated] = useState(false);
 
   const { volume, soundEnabled } = useAudioStore();
   const { 
@@ -78,15 +80,30 @@ export const CompletionPage = (): JSX.Element => {
       try {
         setLoading(true);
         
-        const result = await generateFeedback({
+        const feedbackRequest = {
           question_text: currentQuestion.question,
           framework_name: framework,
           category: currentQuestion.category || "General",
           difficulty: currentQuestion.difficulty || "Medium",
           framework_steps_with_responses: responses
-        });
+        };
+        
+        const result = await generateFeedback(feedbackRequest);
         
         setFeedback(result);
+        
+        // Get the feedback log ID from the response
+        const { data } = await supabase
+          .from('feedback_logs')
+          .select('id')
+          .eq('request_data', feedbackRequest)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (data) {
+          setFeedbackLogId(data.id);
+        }
         
         // Play correct or incorrect sound based on score
         if (result.overall_score >= 4) {
@@ -108,6 +125,14 @@ export const CompletionPage = (): JSX.Element => {
     // Play click sound and redirect
     playSound('click', volume, soundEnabled);
     navigate("/challenge");
+  };
+
+  const handleFeedbackRating = async (helpful: boolean) => {
+    if (feedbackLogId) {
+      await rateFeedback(feedbackLogId, helpful);
+      setFeedbackRated(true);
+      playSound('click', volume, soundEnabled);
+    }
   };
 
   return (
@@ -234,6 +259,28 @@ export const CompletionPage = (): JSX.Element => {
               <h3 className="text-xl font-semibold text-[#fda337] mb-3">Interview Readiness</h3>
               <p className="text-gray-700">{feedback.interview_readiness}</p>
             </div>
+            
+            {/* Feedback Rating */}
+            {!feedbackRated && feedbackLogId && (
+              <div className="bg-gray-50 rounded-xl p-6 mb-10 text-center">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Was this feedback helpful?</h3>
+                <div className="flex justify-center gap-4">
+                  <Button
+                    onClick={() => handleFeedbackRating(true)}
+                    className="bg-[#8b3dff] text-white px-6 py-2 rounded-lg hover:bg-[#7b35e0]"
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    onClick={() => handleFeedbackRating(false)}
+                    variant="outline"
+                    className="px-6 py-2 rounded-lg"
+                  >
+                    No
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
         

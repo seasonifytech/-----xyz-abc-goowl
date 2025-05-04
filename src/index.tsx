@@ -5,6 +5,9 @@ import { Desktop } from "./screens/Desktop/Desktop";
 import { Challenge } from "./screens/Challenge/Challenge";
 import { InputPage } from "./screens/Challenge/InputPage";
 import { CompletionPage } from "./screens/Challenge/CompletionPage";
+import { CompanyListPage } from "./screens/Company/CompanyListPage";
+import { InterviewQuestionsListPage } from "./screens/Company/InterviewQuestionsListPage";
+import { QuestionPage } from "./screens/Question/QuestionPage";
 import { Step1Welcome } from "./screens/Onboarding/Step1Welcome";
 import { Step2FullName } from "./screens/Onboarding/Step2FullName";
 import { Step3Experience } from "./screens/Onboarding/Step3Experience";
@@ -40,6 +43,9 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         <Route path="/challenge" element={<><OnboardingRedirect /><Challenge /></>} />
         <Route path="/input" element={<><OnboardingRedirect /><InputPage /></>} />
         <Route path="/challenge/completed" element={<><OnboardingRedirect /><CompletionPage /></>} />
+        <Route path="/companies" element={<><OnboardingRedirect /><CompanyListPage /></>} />
+        <Route path="/companies/:company" element={<><OnboardingRedirect /><InterviewQuestionsListPage /></>} />
+        <Route path="/question/:id" element={<QuestionPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

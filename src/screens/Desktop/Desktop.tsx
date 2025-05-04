@@ -1,12 +1,13 @@
 import {
   BarChart2Icon,
   BookOpenIcon,
+  Menu,
   ChevronDownIcon,
   HomeIcon,
   MoreHorizontalIcon,
   UserIcon,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent } from "../../components/ui/card";
@@ -26,7 +27,12 @@ export const Desktop = (): JSX.Element => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<string[]>([]);
   const [companies, setCompanies] = useState<string[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { setFilters, fetchCompanyQuestions } = useQuestionStore();
+  
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(prev => !prev);
+  }, []);
   
   useEffect(() => {
     const loadFilters = async () => {
@@ -178,8 +184,22 @@ export const Desktop = (): JSX.Element => {
   return (
     <div className="bg-white flex flex-row justify-center w-full">
       <div className="bg-white w-[1440px] h-[850px] relative overflow-hidden">
-        {/* Left Sidebar Navigation - Now fixed */}
-        <div className="fixed w-[310px] h-full left-0 top-0 border-r border-gray-200">
+        {/* Mobile Menu Button */}
+        <div className="lg:hidden fixed top-4 left-4 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMobileMenu}
+            className="w-10 h-10"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Left Sidebar Navigation */}
+        <div className={`fixed w-[310px] h-full left-0 top-0 border-r border-gray-200 bg-white z-40 transition-transform duration-300 lg:translate-x-0 ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
           {/* Logo */}
           <div className="w-[133px] h-[34px] ml-[102px] mt-[42px]">
             <div className="relative h-[34px]">
@@ -229,9 +249,16 @@ export const Desktop = (): JSX.Element => {
             </div>
 
             <div className="flex items-center">
-              <BookOpenIcon className="w-5 h-4 ml-[2px]" />
+              <BookOpenIcon className="w-6 h-6" />
               <span className="ml-[34px] text-statebold font-title font-[number:var(--title-font-weight)] text-[length:var(--title-font-size)] tracking-[var(--title-letter-spacing)] leading-[var(--title-line-height)] whitespace-nowrap [font-style:var(--title-font-style)] nav-text">
                 Learn
+              </span>
+            </div>
+
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/companies')}>
+              <img src="/building.svg" alt="Companies" className="w-6 h-6" />
+              <span className="ml-[34px] text-statebold font-title font-[number:var(--title-font-weight)] text-[length:var(--title-font-size)] tracking-[var(--title-letter-spacing)] leading-[var(--title-line-height)] whitespace-nowrap [font-style:var(--title-font-style)] nav-text">
+                Companies
               </span>
             </div>
 
@@ -258,10 +285,10 @@ export const Desktop = (): JSX.Element => {
         </div>
 
         {/* Main Content Area - Now with left margin to accommodate fixed sidebar */}
-        <div className="ml-[310px] overflow-y-auto h-full" style={{scrollBehavior: "smooth", willChange: "scroll-position"}}>
+        <div className="lg:ml-[310px] overflow-y-auto h-full" style={{scrollBehavior: "smooth", willChange: "scroll-position"}}>
           <div className="p-[24px]">
             {/* Stats Icons - repositioned */}
-            <div className="flex items-center absolute top-[24px] right-[40px] gap-[40px]">
+            <div className="flex items-center justify-end mt-16 lg:mt-0 lg:absolute lg:top-[24px] lg:right-[40px] gap-[20px] lg:gap-[40px]">
               <div className="flex flex-col items-center">
                 <img
                   className="w-[29px] h-[29px] object-cover"
@@ -298,9 +325,9 @@ export const Desktop = (): JSX.Element => {
             
             {/* Main Content Layout */}
             <div className="mt-[40px] flex">
-              <div className="w-[610px]">
+              <div className="w-full lg:w-[610px]">
                 {/* Challenge Banner - Left aligned (removed mx-auto) - FIXED Button Spacing */}
-                <Card className="w-[610px] h-[80px] mb-[30px] rounded-xl bg-primarypurple border-none">
+                <Card className="w-full lg:w-[610px] h-[80px] mb-[30px] rounded-xl bg-primarypurple border-none">
                   <CardContent className="p-0 flex items-center justify-between h-full">
                     <div className="flex items-center">
                       <img
@@ -321,9 +348,9 @@ export const Desktop = (): JSX.Element => {
                 </Card>
 
                 {/* Filter Selects - Removed duplicate dropdown icons */}
-                <div className="flex gap-5 mb-[30px]">
+                <div className="flex flex-wrap gap-3 mb-[30px]">
                   <Select onValueChange={handleSelectCompany}>
-                    <SelectTrigger className="w-[190px] h-[40px] bg-primaryteal text-white font-bold rounded-xl border-none">
+                    <SelectTrigger className="w-full sm:w-[190px] h-[40px] bg-primaryteal text-white font-bold rounded-xl border-none">
                       <SelectValue placeholder="Select company" />
                     </SelectTrigger>
                     <SelectContent>
@@ -337,7 +364,7 @@ export const Desktop = (): JSX.Element => {
                   </Select>
 
                   <Select onValueChange={handleSelectCategory}>
-                    <SelectTrigger className="w-[139px] h-[40px] bg-primaryteal text-white font-bold rounded-xl border-none">
+                    <SelectTrigger className="w-full sm:w-[139px] h-[40px] bg-primaryteal text-white font-bold rounded-xl border-none">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -351,7 +378,7 @@ export const Desktop = (): JSX.Element => {
                   </Select>
 
                   <Select onValueChange={handleSelectDifficulty}>
-                    <SelectTrigger className="w-[176px] h-[40px] bg-primaryteal text-white font-bold rounded-xl border-none">
+                    <SelectTrigger className="w-full sm:w-[176px] h-[40px] bg-primaryteal text-white font-bold rounded-xl border-none">
                       <SelectValue placeholder="Difficulty level" />
                     </SelectTrigger>
                     <SelectContent>
@@ -364,7 +391,7 @@ export const Desktop = (): JSX.Element => {
                 </div>
 
                 {/* Level Cards - First Row with increased spacing */}
-                <div className="grid grid-cols-3 gap-5 mb-[24px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-[24px]">
                   {levelCardsData.slice(0, 3).map((level, index) => (
                     <Link 
                       key={index} 
@@ -406,7 +433,7 @@ export const Desktop = (): JSX.Element => {
                 </div>
 
                 {/* Level Cards - Second Row */}
-                <div className="grid grid-cols-3 gap-5 mb-[30px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-[30px]">
                   {levelCardsData.slice(3, 5).map((level, index) => (
                     <Card
                       key={index}
@@ -454,7 +481,7 @@ export const Desktop = (): JSX.Element => {
                 </div>
 
                 {/* Company Cards - First Row */}
-                <div className="grid grid-cols-3 gap-5 mb-[20px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-[20px]">
                   {companyCardsData.slice(0, 3).map((company, index) => (
                     <Card
                       key={index}
@@ -488,7 +515,7 @@ export const Desktop = (): JSX.Element => {
                 </div>
 
                 {/* Company Cards - Second Row */}
-                <div className="grid grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {companyCardsData.slice(3, 6).map((company, index) => (
                     <Card
                       key={index}
@@ -523,7 +550,7 @@ export const Desktop = (): JSX.Element => {
               </div>
 
               {/* Right Side Cards - Now with specific right alignment and top margin to avoid overlap */}
-              <div className="ml-auto w-[295px] mt-[80px]">
+              <div className="hidden lg:block ml-auto w-[295px] mt-[80px]">
                 {/* Leaderboard Card */}
                 <Card className="w-[295px] h-[400px] rounded-xl border border-solid border-[#00c4cc] mb-[20px]">
                   <CardContent className="p-5 relative h-full flex flex-col">
